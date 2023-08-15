@@ -63,7 +63,7 @@ def _calculate_score(loc, stops_loc, stops_score, decay_param=0.5):
 def _create_hex_grid(h3_res, area):
     ori_crs = area.crs
     hexbin = area.dissolve().to_crs('EPSG:4326')[['geometry']].h3.polyfill_resample(h3_res)
-    hexbin = hexbin.rename_axis('ID').reset_index()
+    hexbin = hexbin.rename_axis(f'h3_{h3_res:02d}').drop(columns=['index'])
     hexbin = hexbin.to_crs(ori_crs)
     return hexbin
 
