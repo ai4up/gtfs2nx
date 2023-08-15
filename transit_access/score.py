@@ -14,8 +14,37 @@ logger = logging.getLogger(__name__)
 
 
 def transit_access(G, loc):
+    """
+    Calculate the TransitAccess score for a set of locations.
+
+    TransitAccess is a measure of the accessibility of a location using the public transportation network.
+    It is calculated as the sum of the closeness centrality of all reachable transit stops weighted by the service frequency of the respective transit line.
+
+    Parameters
+    ----------
+    G : networkx.MultiDiGraph
+        Directional transit network graph with precalculated closeness centrality and service frequency.
+    loc : geopandas.GeoSeries
+        GeoSeries of locations for which the TransitAccess score should be calculated.
+
+
+    Returns
+    -------
+    score : pandas.Series
+        TransitAccess score for each location.
+
+
+    Examples
+    --------
+    >>> G = network.transit_graph('some-dir/city-GTFS.zip', 'EPSG:26914')
+    >>> locations = geopandas.GeoSeries.from_xy([13.351798027529089], [52.49615200183667], crs='EPSG:4326')
+    >>> locations = locations.to_crs(G.graph['crs'])
+    >>> score.transit_access(G, locations)
+    0    0.00123
+    """
+
     stops, _ = ox.utils_graph.graph_to_gdfs(G)
-    stops['index'] = stops['n_departures'] * stops['centrality'] 
+    stops['index'] = stops['n_departures'] * stops['centrality']
     score = _calculate_score(
                 loc=loc,
                 stops_loc=stops.geometry,
@@ -25,6 +54,39 @@ def transit_access(G, loc):
 
 
 def transit_access_for_grid(G, area=None, h3_res=9):
+    """
+    Calculate the TransitAccess score for a hexagonal grid.
+
+    TransitAccess is a measure of the accessibility of a location using the public transportation network.
+    It is calculated as the sum of the closeness centrality of all reachable transit stops weighted by the service frequency of the respective transit line.
+
+    Parameters
+    ----------
+    G : networkx.MultiDiGraph
+        Directional transit network graph with precalculated closeness centrality and service frequency.
+    area : geopandas.GeoDataFrame
+        GeoDataFrame of the area for which the TransitAccess score should be calculated.
+        If None, the convex hull of the transit stops with a 2km buffer is used.
+    h3_res : int
+        Resolution of the hexagonal grid (see https://h3geo.org/docs/core-library/restable/).
+
+    Returns
+    -------
+    score : geopandas.GeoDataFrame
+        GeoDataFrame of the hexagonal grid with TransitAccess score for each hexagon.
+
+
+    Examples
+    --------
+    >>> G = network.transit_graph('some-dir/city-GTFS.zip', 'EPSG:26914')
+    >>> score.transit_access_for_grid(G, h3_res=8)
+                               geometry                                                access_score
+        h3_08
+        8866e09107fffff	POLYGON ((987746.618 999962.825, 987300.330 99...	7.883864e-03
+        8866e42f41fffff	POLYGON ((1007073.842 1015684.465, 1006628.554...	1.071192e-03
+        8866e0911dfffff	POLYGON ((989646.084 1000076.113, 989199.868 9...	5.542570e-02
+    """
+
     if area is None:
         logger.info('Calculating TransitAccess index for convex hull with 2km buffer around transit stops.')
         stops, _ = ox.utils_graph.graph_to_gdfs(G)
@@ -36,11 +98,41 @@ def transit_access_for_grid(G, area=None, h3_res=9):
 
 
 def transit_access_for_neighborhood(G, neighborhoods):
+    """
+    Calculate the TransitAccess score for a set of neighborhoods.
+
+    TransitAccess is a measure of the accessibility of a location using the public transportation network.
+    It is calculated as the sum of the closeness centrality of all reachable transit stops weighted by the service frequency of the respective transit line.
+    The neighborhood score is calculated as the average of the TransitAccess scores of all h3 hexagon centroids within the neighborhood.
+
+    Parameters
+    ----------
+    G : networkx.MultiDiGraph
+        Directional transit network graph with precalculated closeness centrality and service frequency.
+    neighborhoods : geopandas.GeoDataFrame
+        GeoDataFrame of the neighborhoods for which the TransitAccess score should be calculated.
+
+    Returns
+    -------
+    score : geopandas.GeoDataFrame
+        GeoDataFrame of the hexagonal grid with TransitAccess score for each hexagon.
+
+
+    Examples
+    --------
+    >>> G = network.transit_graph('some-dir/city-GTFS.zip', 'EPSG:26914')
+    >>> score.transit_access_for_neighborhood(G, gdf_zip_codes)
+                 zip_code     geometry                                         	access_score
+        0	10115	POLYGON ((389163.210 5821872.935, 389321.827 5...	0.379396
+        1	10117	POLYGON ((389678.019 5820987.307, 389683.298 5...	0.450508
+        2	10119	POLYGON ((391390.987 5820861.120, 391546.214 5...	0.364538
+    """
+
     hex_grid = transit_access_for_grid(G, neighborhoods)
     hex_grid['geometry'] = hex_grid.centroid
     area_access = _mean_per_area(neighborhoods, hex_grid, 'access_score')
     return area_access
-    
+
 
 def _calculate_score(loc, stops_loc, stops_score, decay_param=0.5):
     if loc.crs != stops_loc.crs:
@@ -82,7 +174,7 @@ def _calculate_gravity_score(distance_matrix, supply, decay_param):
 
     # only consider a single stop per route and direction
     # intuition: closeness to two stops of same trip is not better than to one stop with identical distance
-    access_to_each_stop['route_id_w_direction'] = access_to_each_stop.index.str.split(network.ID_SEP, 1).str[1] 
+    access_to_each_stop['route_id_w_direction'] = access_to_each_stop.index.str.split(network.ID_SEP, 1).str[1]
     access_to_each_route = access_to_each_stop.groupby('route_id_w_direction').max()
 
     # summing up the access to all reachable stops

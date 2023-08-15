@@ -15,16 +15,60 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s', level=lo
 logger = logging.getLogger(__name__)
 
 
-def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_time=None, boundary=None, frac=None, walk_transfer_max_distance=200, walk_speed_kmph=4):    
+def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_time=None, boundary=None, frac=None, walk_transfer_max_distance=200, walk_speed_kmph=4):
+    """
+    Create transit network graph from GTFS file(s).
+
+    Nodes correspond to transit stops and edges to transit connections between stops.
+    Each node and each edge belongs to only a single transit route.
+    If multiple routes serve the same station, they are depicted as multiple nodes.
+    Edges for walking transfer between nearby nodes of different routes are added.
+    For each node, the global closeness centrality and the number of departures are calculated.
+
+
+    Parameters
+    ----------
+    gtfs_paths : list
+        Paths to GTFS files.
+    local_crs : str
+        Metric coordinate reference system to project transit stops to.
+    route_types : list, optional
+        List of transit route types to include in the graph. If None, all service types are included.
+    start_time : str, optional
+        ISO 8601-formatted start time to consider only services within a time window.
+    end_time : str, optional
+        ISO 8601-formatted end time to consider only services within a time window.
+    boundary : shapely.geometry.Polygon, optional
+        Polygon to filter transit stops by.
+    frac : float, optional
+        Fraction, allowing to randomly sample a subset of transit routes to be included in the graph.
+    walk_transfer_max_distance : int, optional
+        Maximum distance in meters to allow walking transfer between transit stops.
+    walk_speed_kmph : int, optional
+        Assumed walking speed in km/h when calculating walking transfer times.
+
+
+    Returns
+    -------
+    networkx.MultiDiGraph
+        Directional transit network graph.
+
+
+    Examples
+    --------
+    >>> transit_graph('some-dir/city-GTFS.zip', 'EPSG:26914')
+    <networkx.classes.multidigraph.MultiDiGraph object at 0x7f9b1c1b6a90>
+    """
+
     logger.info('STEP 1/12 - Loading GTFS feed(s) ...')
     feeds = _get_busiest_feeds(gtfs_paths)
 
     logger.info('STEP 2/12 - Combining GTFS feeds ...')
     routes, trips, stops, stop_times = _combine_feeds(feeds)
-    
+
     logger.info('STEP 3/12 - Creating unique stop ids per route...')
     stops, stop_times = _create_unique_route_stop_ids(routes, trips, stops, stop_times)
-    
+
     if start_time and end_time:
         logger.info(f'STEP 4/12 - Filtering transit service between {start_time} and {end_time}...')
         stops, stop_times = _filter_by_time(stops, stop_times, start_time, end_time)
@@ -189,11 +233,11 @@ def _add_walk_transfer_edges(G, max_distance, walk_speed_kmph):
     crow_flies_distance_factor = 1.5
     for from_idx, to_indices in enumerate(indices):
         for to_stop_idx, d in zip(to_indices, distance[from_idx]):
-            
+
             walk_dis = d * crow_flies_distance_factor
             walk_h = walk_dis / 1000 / walk_speed_kmph
             walk_sec = walk_h * 60 * 60
-            
+
             f = stops.index[from_idx]
             t = stops.index[to_stop_idx]
 
