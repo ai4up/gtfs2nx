@@ -174,7 +174,7 @@ def _calculate_gravity_score(distance_matrix, supply, decay_param):
 
     # only consider a single stop per route and direction
     # intuition: closeness to two stops of same trip is not better than to one stop with identical distance
-    access_to_each_stop['route_id_w_direction'] = access_to_each_stop.index.str.split(network.ID_SEP, 1).str[1]
+    access_to_each_stop['route_id_w_direction'] = access_to_each_stop.index.str.split(network.ID_SEP, n=1).str[1]
     access_to_each_route = access_to_each_stop.groupby('route_id_w_direction').max()
 
     # summing up the access to all reachable stops
