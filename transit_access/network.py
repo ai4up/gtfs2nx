@@ -5,16 +5,18 @@ import datetime
 
 import pandas as pd
 import networkx as nx
+import momepy as mm
 import partridge as ptg
 from sklearn.neighbors import KDTree
 
 ID_SEP = '@@'
+# ID_SEP = '-'
 
 logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s', level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
 
-def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_time=None, boundary=None, frac=None, walk_transfer_max_distance=200, walk_speed_kmph=4):
+def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_time=None, agency_ids=None, boundary=None, frac=None, walk_transfer_max_distance=200, walk_speed_kmph=4):
     """
     Create transit network graph from GTFS file(s).
 
@@ -60,7 +62,7 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_
     """
 
     logger.info('STEP 1/12 - Loading GTFS feed(s) ...')
-    feeds = _get_busiest_feeds(gtfs_paths)
+    feeds = _get_busiest_feeds(gtfs_paths, agency_ids)
 
     logger.info('STEP 2/12 - Combining GTFS feeds ...')
     routes, trips, stops, stop_times = _combine_feeds(feeds)
@@ -112,13 +114,20 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_
     return G
 
 
-def _get_busiest_feeds(gtfs_paths):
-    return [_get_busiest_feed(path) for path in gtfs_paths]
+def local_closeness_centrality(G, radius=3000):
+    return mm.closeness_centrality(G.reverse(), name='local_centrality', radius=radius, distance='weight').reverse()
 
 
-def _get_busiest_feed(gtfs_path):
+def _get_busiest_feeds(gtfs_paths, agency_ids=None):
+    return [_get_busiest_feed(path, agency_ids) for path in gtfs_paths]
+
+
+def _get_busiest_feed(gtfs_path, agency_ids=None):
     _, service_ids = ptg.read_busiest_date(gtfs_path)
-    view = {'trips.txt': {'service_id': service_ids}}
+    view = {
+        'trips.txt': {'service_id': service_ids},
+        'agency.txt': {'agency_id': agency_ids} if agency_ids else None,
+        }
     feed = ptg.load_geo_feed(gtfs_path, view)
     return feed
 
