@@ -4,10 +4,9 @@ import logging
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-import osmnx as ox
 import h3pandas
 
-from transit_access import network
+from transit_access import network, utils
 
 logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s', level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -43,7 +42,7 @@ def transit_access(G, loc):
     0    0.00123
     """
 
-    stops, _ = ox.utils_graph.graph_to_gdfs(G)
+    stops = utils.nodes_to_gdf(G)
     stops['index'] = stops['n_departures'] * stops['centrality']
     score = _calculate_score(
                 loc=loc,
@@ -89,7 +88,7 @@ def transit_access_for_grid(G, area=None, h3_res=9):
 
     if area is None:
         logger.info('Calculating TransitAccess index for convex hull with 2km buffer around transit stops.')
-        stops, _ = ox.utils_graph.graph_to_gdfs(G)
+        stops = utils.nodes_to_gdf(G)
         area = stops.dissolve().convex_hull.buffer(2000).to_frame('geometry')
 
     hex_grid = _create_hex_grid(h3_res, area)
