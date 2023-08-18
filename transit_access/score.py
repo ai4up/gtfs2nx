@@ -12,7 +12,7 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s', level=lo
 logger = logging.getLogger(__name__)
 
 
-def transit_access(G, loc):
+def transit_access(G, loc, decay_param=0.5):
     """
     Calculate the TransitAccess score for a set of locations.
 
@@ -25,6 +25,8 @@ def transit_access(G, loc):
         Directional transit network graph with precalculated closeness centrality and service frequency.
     loc : geopandas.GeoSeries
         GeoSeries of locations for which the TransitAccess score should be calculated.
+    decay_param : float
+        Decay parameter for the gaussian decay function used to weight the access to each stop by distance.
 
 
     Returns
@@ -44,11 +46,14 @@ def transit_access(G, loc):
 
     stops = utils.nodes_to_gdf(G)
     stops['index'] = stops['n_departures'] * stops['centrality']
-    score = _calculate_score(
-                loc=loc,
-                stops_loc=stops.geometry,
-                stops_score=stops['index'].values,
-            )
+
+    dm = _distance_matrix(loc, stops.geometry)
+    score = _calculate_gravity_score(
+        distance_matrix=dm,
+        supply=stops['index'].values,
+        decay_param=decay_param,
+    )
+
     return score
 
 
@@ -133,22 +138,17 @@ def transit_access_for_neighborhood(G, neighborhoods):
     return area_access
 
 
-def _calculate_score(loc, stops_loc, stops_score, decay_param=0.5):
+def _distance_matrix(loc, stops_loc):
     if loc.crs != stops_loc.crs:
         raise Exception(f'Coordinate reference system (CRS) of provided locations ({loc.crs}) and transit stops ({stops_loc.crs}) is not the same.')
 
     if not loc.crs.is_projected:
         raise Exception(f'Please use projected coordinate reference system (CRS) to ensure accurate distance calculation.')
 
-    distance_matrix = loc.apply(lambda g: stops_loc.distance(g))
-    distance_matrix.to_pickle(f'distance-matrix-{len(loc)}-{len(stops_loc)}.pkl')
+    dm = loc.apply(lambda g: stops_loc.distance(g)) / 1000
+    dm.to_pickle(f'distance-matrix-{len(loc)}-{len(stops_loc)}.pkl')
 
-    score = _calculate_gravity_score(
-        distance_matrix=distance_matrix / 1000,
-        supply=stops_score,
-        decay_param=decay_param
-    )
-    return score
+    return dm
 
 
 def _create_hex_grid(h3_res, area):
