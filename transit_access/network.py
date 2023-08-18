@@ -4,7 +4,6 @@ import logging
 import datetime
 
 import pandas as pd
-import osmnx as ox
 import networkx as nx
 import partridge as ptg
 from sklearn.neighbors import KDTree
@@ -50,14 +49,14 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_
 
     Returns
     -------
-    networkx.MultiDiGraph
+    networkx.DiGraph
         Directional transit network graph.
 
 
     Examples
     --------
     >>> transit_graph('some-dir/city-GTFS.zip', 'EPSG:26914')
-    <networkx.classes.multidigraph.MultiDiGraph object at 0x7f9b1c1b6a90>
+    <networkx.classes.digraph.DiGraph object at 0x7f9b1c1b6a90>
     """
 
     logger.info('STEP 1/12 - Loading GTFS feed(s) ...')
@@ -97,9 +96,6 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_
 
     logger.info('STEP 9/12 - Creating NetworkX graph...')
     G = _create_graph(stops, segments)
-
-    if _duplicated_edges(G):
-        raise Exception('Found unexpected parallel edges. Please validate GTFS file.')
 
     logger.info(f'STEP 10/12 - Adding edges for walk transfers between stops no more than {walk_transfer_max_distance} m apart (assuming walk speed of {walk_speed_kmph} km/h)...')
     G = _add_walk_transfer_edges(G, max_distance=walk_transfer_max_distance, walk_speed_kmph=walk_speed_kmph)
@@ -211,16 +207,11 @@ def _create_graph(stops, segments):
     stops['y'] = stops.geometry.y
     nodes = list(zip(stops.index, stops[['y', 'x', 'headaway', 'route_id', 'route_type', 'route_short_name']].to_dict('records')))
 
-    G = nx.MultiDiGraph(crs=stops.crs) # TODO: consider if DiGraph is computanionally faster (osmnx only works with MultiDiGraph and key index and paralell edges are required if walking between stations connected by transit should be possible)
+    G = nx.DiGraph(crs=stops.crs)
     G.add_weighted_edges_from(weighted_edges)
     G.add_nodes_from(nodes)
 
     return G
-
-
-def _duplicated_edges(G):
-    _, edges = ox.utils_graph.graph_to_gdfs(G)
-    return edges.reset_index()['key'].nunique() > 1
 
 
 def _add_walk_transfer_edges(G, max_distance, walk_speed_kmph):
