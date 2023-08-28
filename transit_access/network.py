@@ -4,13 +4,12 @@ import logging
 import datetime
 
 import pandas as pd
+import geopandas as gpd
 import networkx as nx
-import momepy as mm
 import partridge as ptg
 from sklearn.neighbors import KDTree
 
 ID_SEP = '@@'
-# ID_SEP = '-'
 
 logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s', level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -39,6 +38,8 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_
         ISO 8601-formatted start time to consider only services within a time window.
     end_time : str, optional
         ISO 8601-formatted end time to consider only services within a time window.
+    agency_ids : list, optional
+        List of agencies (according to agency.txt) whose transit services are to be included in the graph. If None, all agencies are included.
     boundary : shapely.geometry.Polygon, optional
         Polygon to filter transit stops by.
     frac : float, optional
@@ -61,61 +62,45 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_
     <networkx.classes.digraph.DiGraph object at 0x7f9b1c1b6a90>
     """
 
-    logger.info('STEP 1/12 - Loading GTFS feed(s) ...')
+    logger.info('STEP 1/5 - Loading GTFS feed(s) ...')
     feeds = _get_busiest_feeds(gtfs_paths, agency_ids)
 
-    logger.info('STEP 2/12 - Combining GTFS feeds ...')
+    logger.info('STEP 2/5 - Preprocessing GTFS feeds ...')
     routes, trips, stops, stop_times = _combine_feeds(feeds)
-
-    logger.info('STEP 3/12 - Creating unique stop ids per route...')
+    routes, trips, stops, stop_times = _preprocess(routes, trips, stops, stop_times, local_crs)
     stops, stop_times = _create_unique_route_stop_ids(routes, trips, stops, stop_times)
 
     if start_time and end_time:
-        logger.info(f'STEP 4/12 - Filtering transit service between {start_time} and {end_time}...')
+        logger.info(f'Filtering transit service between {start_time} and {end_time}...')
         stops, stop_times = _filter_by_time(stops, stop_times, start_time, end_time)
 
-    logger.info('STEP 5/12 - Approximating transfer waiting times...')
-    stops = _calculate_stop_headway(stops, stop_times)
-    stops, stop_times = _filter_na_headway(stops, stop_times)
+    stop_times = _clean_stop_times(stops, stop_times)
 
-    logger.info('STEP 6/12 - Calculating travel times between stops...')
+    logger.info('STEP 3/5 - Determining service frequency, transfer waiting & travel times...')
+    stops = _calculate_stop_headway(stops, stop_times)
+    stops = _calculate_service_frequency(stops, stop_times, start_time, end_time)
+    stops, stop_times = _filter_na_headway(stops, stop_times)
     segments = _calculate_segment_travel_times(stop_times)
 
-    logger.info(f'STEP 7/12 - Projecting transit stop locations to local, metric coordinate system ({local_crs})...')
-    stops = stops.to_crs(local_crs)
-
     if boundary:
-        logger.info('STEP 8a/12 - Filtering by geographical boundary...')
+        logger.info('Filtering by geographical boundary...')
         stops, segments = _filter_by_boundary(stops, segments, boundary)
 
     if route_types:
-        logger.info(f'STEP 8b/12 - Filtering by transit service types ({route_types})...')
+        logger.info(f'Filtering by transit service types ({route_types})...')
         stops, segments = _filter_by_type(stops, segments, route_types)
 
     if frac:
-        logger.info(f'STEP 8c/12 - Sampling {frac*100}% of all transit routes...')
+        logger.info(f'Sampling {frac*100}% of all transit routes...')
         stops, segments = _sample_routes(stops, segments, frac)
 
-    logger.info('STEP 9/12 - Creating NetworkX graph...')
+    logger.info('STEP 4/5 - Creating NetworkX graph...')
     G = _create_graph(stops, segments)
 
-    logger.info(f'STEP 10/12 - Adding edges for walk transfers between stops no more than {walk_transfer_max_distance} m apart (assuming walk speed of {walk_speed_kmph} km/h)...')
+    logger.info(f'STEP 5/5 - Adding edges for walk transfers between stops no more than {walk_transfer_max_distance} m apart (assuming walk speed of {walk_speed_kmph} km/h)...')
     G = _add_walk_transfer_edges(G, max_distance=walk_transfer_max_distance, walk_speed_kmph=walk_speed_kmph)
 
-    logger.info('STEP 11/12 - Calculating global closeness centrality based on travel times...')
-    # reverse directed graph to calculate closest path to all other nodes instead of from all other nodes
-    centrality = nx.closeness_centrality(G.reverse(), distance='weight', wf_improved=True)
-    nx.set_node_attributes(G, centrality, 'centrality')
-
-    logger.info('STEP 12/12 - Calculating service frequency...')
-    n_departures = _count_stop_departures(stop_times).to_dict()
-    nx.set_node_attributes(G, n_departures, 'n_departures')
-
     return G
-
-
-def local_closeness_centrality(G, radius=3000):
-    return mm.closeness_centrality(G.reverse(), name='local_centrality', radius=radius, distance='weight').reverse()
 
 
 def _get_busiest_feeds(gtfs_paths, agency_ids=None):
@@ -140,19 +125,46 @@ def _combine_feeds(feeds):
     return routes, trips, stops, stop_times
 
 
-def _create_unique_route_stop_ids(routes, trips, stops, stop_times):
-    trips = pd.merge(trips, routes[['route_id', 'route_type', 'route_short_name']], on='route_id')
-    stop_times = pd.merge(stop_times, trips[['trip_id', 'route_id', 'direction_id', 'route_type', 'route_short_name']], on='trip_id')
-    stop_times['new_stop_id'] = stop_times['stop_id'] + ID_SEP + stop_times['route_id'] + ID_SEP + stop_times['direction_id'].astype(str)
-    stops = pd.merge(stops, stop_times[['stop_id', 'new_stop_id', 'route_id', 'direction_id', 'route_type', 'route_short_name']].drop_duplicates(), on='stop_id')
+def _preprocess(routes, trips, stops, stop_times, local_crs):
+    """Drop unnecessary attributes and clean up duplicates."""
+    routes = routes[['route_id', 'route_type', 'route_short_name']].drop_duplicates('route_id')
+    trips = trips[['trip_id', 'route_id']].drop_duplicates('trip_id')
+    stops = stops[['stop_id', 'geometry']].drop_duplicates('stop_id').to_crs(local_crs)
+    stop_times = stop_times[['trip_id', 'stop_id', 'arrival_time', 'stop_sequence']].sort_values(
+        by=['trip_id', 'stop_sequence']).drop_duplicates(subset=['trip_id', 'stop_sequence'])
+    return routes, trips, stops, stop_times
 
-    stop_times['stop_id'] = stop_times['new_stop_id']
-    stops['stop_id'] = stops['new_stop_id']
-    stops = stops.set_index('stop_id')
-    return stops, stop_times
+
+def _create_unique_route_stop_ids(routes, trips, stops, stop_times):
+    """Split stops served by multipe routes into separate, uniquely identifiable stops belonging to only one route"""
+    trips = pd.merge(trips, routes, on='route_id')
+
+
+    stop_times = pd.merge(stop_times, trips, on='trip_id')
+    route_stops = stop_times[['stop_id', 'route_id', 'route_type', 'route_short_name']].drop_duplicates()  # create unique stop per route
+    route_stops = pd.merge(stops, route_stops, on='stop_id')  # add geometry
+
+    route_stops['stop_id'] = route_stops['stop_id'] + ID_SEP + route_stops['route_id']
+    stop_times['stop_id'] = stop_times['stop_id'] + ID_SEP + stop_times['route_id']
+    route_stops = route_stops.set_index('stop_id')
+
+    return route_stops, stop_times
+
+
+def _calculate_service_frequency(stops, stop_times, start_time=None, end_time=None):
+    if start_time and end_time:
+        start = _to_seconds(datetime.time.fromisoformat(start_time))
+        end = _to_seconds(datetime.time.fromisoformat(end_time))
+        duration_hours = (end - start) / 60 / 60
+    else:
+        duration_hours = 24
+
+    stops['service_frequency'] = stop_times.groupby('stop_id')['arrival_time'].nunique() / duration_hours
+    return stops
 
 
 def _calculate_stop_headway(stops, stop_times):
+    """Calculate average waiting time until next trip at each stop."""
     stop_times = stop_times.sort_values(['stop_id', 'arrival_time'])
     stop_times['waiting'] = stop_times.groupby('stop_id')['arrival_time'].shift(-1) - stop_times['arrival_time']
     stops['headaway'] = stop_times.groupby('stop_id')['waiting'].mean()
@@ -165,17 +177,51 @@ def _filter_na_headway(stops, stop_times):
     return stops, stop_times
 
 
+def _calculate_segment_euclidean_distance(stop_times, stops):
+    """Calculate euclidean distance in meter between all consecutive stops."""
+    segments = stop_times[['stop_id', 'next_stop_id']].drop_duplicates()
+    geom = stops['geometry']
+    segments = pd.merge(segments, geom, on='stop_id')
+    segments = pd.merge(segments, geom.rename('next_stop_geometry'), left_on='next_stop_id', right_on='stop_id')
+    segments['distance'] = gpd.GeoSeries(segments['geometry']).distance(gpd.GeoSeries(segments['next_stop_geometry']))
+    stop_times = pd.merge(stop_times, segments[['stop_id', 'next_stop_id', 'distance']], on=['stop_id', 'next_stop_id'])
+    return stop_times
+
+
 def _calculate_segment_travel_times(stop_times):
+    """Calculate average travel time in seconds between all consecutive stops."""
     stop_times = stop_times.sort_values(['trip_id', 'stop_sequence'])
-    stop_times['next_stop'] = stop_times.groupby('trip_id')['stop_id'].shift(-1)
+    stop_times['next_stop_id'] = stop_times.groupby('trip_id')['stop_id'].shift(-1)
     stop_times['next_stop_travel_time'] = stop_times.groupby('trip_id')['arrival_time'].shift(-1) - stop_times['arrival_time']
-    # If trip speed varies over the day, use the average travel time. Drop next_stop NA values as they correspond to terminal stations.
-    segments = stop_times.groupby(['stop_id', 'next_stop'], dropna=True)['next_stop_travel_time'].mean().reset_index()
+    segments = stop_times.groupby(['stop_id', 'next_stop_id'], dropna=True)['next_stop_travel_time'].mean().reset_index()
+
     return segments
 
 
-def _count_stop_departures(stop_times):
-    return stop_times.groupby('stop_id')['arrival_time'].nunique().rename('n_departures')
+def _clean_stop_times(stops, stop_times):
+    """Fix trips with identical consecutive stops and remove trips with corrupt and unrealistic travel times and speeds."""
+    stop_times = stop_times.sort_values(['trip_id', 'stop_sequence'])
+
+    # sometimes the waiting time until the next trip is included as the last stop_time of a trip -> remove it to avoid skewed travel time calculation
+    stop_times['next_stop_id'] = stop_times.groupby('trip_id')['stop_id'].shift(-1)
+    stop_times = stop_times[stop_times['stop_id'] != stop_times['next_stop_id']]
+
+    # remove trips with identical departures at two different stops and with contradictory stop sequence and departure times
+    stop_times['next_stop_travel_time'] = stop_times.groupby('trip_id')['arrival_time'].shift(-1) - stop_times['arrival_time']
+    corrupt_trips = stop_times[stop_times['next_stop_travel_time'] <= 0]['trip_id']
+    stop_times = stop_times[~stop_times['trip_id'].isin(corrupt_trips)]
+
+    # remove trips with unrealistic euclidean travel speed of more than 30m/s (108km/h)
+    stop_times = _calculate_segment_euclidean_distance(stop_times, stops)
+    stop_times['speed'] = stop_times['distance'] / stop_times['next_stop_travel_time']
+    corrupt_trips = stop_times[stop_times['speed'] > 30]['trip_id']
+    stop_times = stop_times[~stop_times['trip_id'].isin(corrupt_trips)]
+
+    # raise exception if there are unrealistic trips left after cleaning
+    if len(stop_times[(stop_times['speed'] <= 0) | (stop_times['distance'] <= 0) | (stop_times['next_stop_travel_time'] <= 0)]) > 0 or stop_times[['speed', 'distance', 'next_stop_travel_time']].isna().values.any():
+        raise Exception()
+
+    return stop_times
 
 
 def _filter_by_time(stops, stop_times, start_time, end_time):
@@ -192,13 +238,13 @@ def _to_seconds(time):
 
 def _filter_by_boundary(stops, segments, boundary):
     stops = stops[stops.within(boundary)]
-    segments = segments[segments['stop_id'].isin(stops.index) & segments['next_stop'].isin(stops.index)]
+    segments = segments[segments['stop_id'].isin(stops.index) & segments['next_stop_id'].isin(stops.index)]
     return stops, segments
 
 
 def _filter_by_type(stops, segments, route_types):
     stops = stops[stops['route_type'].isin(route_types)]
-    segments = segments[segments['stop_id'].isin(stops.index) & segments['next_stop'].isin(stops.index)]
+    segments = segments[segments['stop_id'].isin(stops.index) & segments['next_stop_id'].isin(stops.index)]
     return stops, segments
 
 
@@ -206,7 +252,7 @@ def _sample_routes(stops, segments, frac):
     route_ids = list(stops['route_id'].unique())
     sample_routes = random.sample(route_ids, int(frac * len(route_ids)))
     stops = stops[stops['route_id'].isin(sample_routes)]
-    segments = segments[segments['stop_id'].isin(stops.index) & segments['next_stop'].isin(stops.index)]
+    segments = segments[segments['stop_id'].isin(stops.index) & segments['next_stop_id'].isin(stops.index)]
     return stops, segments
 
 
@@ -214,7 +260,7 @@ def _create_graph(stops, segments):
     weighted_edges = list(segments.itertuples(index=False, name=None))
     stops['x'] = stops.geometry.x
     stops['y'] = stops.geometry.y
-    nodes = list(zip(stops.index, stops[['y', 'x', 'headaway', 'route_id', 'route_type', 'route_short_name']].to_dict('records')))
+    nodes = list(zip(stops.index, stops[['y', 'x', 'headaway', 'service_frequency', 'route_id', 'route_type', 'route_short_name']].to_dict('records')))
 
     G = nx.DiGraph(crs=stops.crs)
     G.add_weighted_edges_from(weighted_edges)
