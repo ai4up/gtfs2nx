@@ -1,15 +1,22 @@
 import pandas as pd
 import geopandas as gpd
+import networkx as nx
 from shapely.geometry import LineString
 from shapely.geometry import Point
 
 
+def nodes_to_df(G):
+    nodes, data = zip(*G.nodes(data=True))
+    df = pd.DataFrame(data, index=nodes)
+
+    return df
+
+
 def nodes_to_gdf(G):
     crs = G.graph['crs']
-    nodes, data = zip(*G.nodes(data=True))
-
-    geom = [Point(d['x'], d['y']) for d in data]
-    gdf = gpd.GeoDataFrame(data, index=nodes, geometry=geom, crs=crs)
+    df = nodes_to_df(G)
+    geom = gpd.points_from_xy(df['x'], df['y'])
+    gdf = gpd.GeoDataFrame(df, geometry=geom, crs=crs)
 
     return gdf
 
