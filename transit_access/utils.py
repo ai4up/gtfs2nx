@@ -59,3 +59,77 @@ def closeness_centrality(G):
 def local_closeness_centrality(G, radius):
     # reverse directed graph to calculate closest path to all other nodes instead of from all other nodes
     return mm.closeness_centrality(G.reverse(), name='local_centrality', radius=radius, distance='weight').reverse()
+
+
+def plot_edges(G, attr=None, inc_walk_edges=False, adjust_linewith=True):
+    edges = edges_to_gdf(G)
+
+    if attr and attr not in edges.columns:
+        nodes = nodes_to_df(G)
+        edges = _mean_node_attr(edges, nodes, attr)
+    
+    if adjust_linewith:
+        attr_val = edges[edges['mode'] != 'walk'][attr]
+        linewidth = _scale_to_range(attr_val, range=[0.1, 2], quantiles=[.05, .95])
+    else:
+        linewidth = None
+
+    edges = edges.sort_values(attr, ascending=True)
+    ax = edges[edges['mode'] != 'walk'].plot(column=attr, linewidth=linewidth, zorder=1, legend=True, legend_kwds={'shrink': 0.6})
+    
+    if inc_walk_edges:
+        edges[edges['mode'] == 'walk'].plot(color='lightgrey', linewidth=0.2, zorder=0, ax=ax)
+
+    ax.set_axis_off()
+    ax.set_title(attr)
+
+
+def plot_route(G, from_idx, to_idx):
+    nodes, edges = graph_to_gdfs(G)
+
+    route = nx.shortest_path(G, nodes.index[from_idx], nodes.index[to_idx], weight='weight')
+    route_edges = edges.loc[list(zip(route, route[1:], [0] * len(route)))]
+    route_transfers = route_edges[route_edges['mode'] == 'walk'].reset_index()
+
+    ax = edges[edges['mode'] != 'walk'].plot(color='lightgrey')
+    route_edges.plot(color='green', linewidth=2, ax=ax)
+    route_transfers.plot(color='purple', linewidth=5, ax=ax)
+
+    def _transfer_desc(x, nodes=nodes):
+        start = nodes.loc[x['u']]
+        end = nodes.loc[x['v']]
+        duration = int(x['weight'] / 60)
+
+        desc = "transfer"
+        desc += f"from {start['route_short_name']} ({start['route_type']}) "
+        desc += f"to {end['route_short_name']} ({end['route_type']}) "
+        desc += f"[{duration} min]"
+
+        return desc
+
+    route_transfers.apply(lambda x: ax.annotate(text=_transfer_desc(x), xy=x.geometry.centroid.coords[0], ha='center'), axis=1)
+    ax.set_axis_off()
+
+
+def _scale_to_range(s, range, quantiles=None):
+    if quantiles:
+        vmin, vmax = s.quantile(quantiles)
+        s = s.mask(s > vmax, vmax)
+        s = s.mask(s < vmin, vmin)
+
+    new_min, new_max = range
+    old_min, old_max = s.min(), s.max()
+    old_range = old_max - old_min
+    new_range = new_max - new_min
+    scaled = ((s - old_min) / old_range * new_range) + new_min
+
+    return scaled
+
+
+def _mean_node_attr(edges, nodes, attr):
+    u = edges.index.get_level_values('u')
+    v = edges.index.get_level_values('v')
+    mean = (nodes.loc[u][attr].values + nodes.loc[v][attr].values) / 2
+    edges[attr] = mean
+
+    return edges
