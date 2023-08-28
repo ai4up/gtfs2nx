@@ -1,6 +1,7 @@
 import pandas as pd
 import geopandas as gpd
 import networkx as nx
+import momepy as mm
 from shapely.geometry import LineString
 from shapely.geometry import Point
 
@@ -45,3 +46,16 @@ def edges_to_gdf(G):
 
 def graph_to_gdfs(G):
     return nodes_to_gdf(G), edges_to_gdf(G)
+
+
+def closeness_centrality(G):
+    # reverse directed graph to calculate closest path to all other nodes instead of from all other nodes
+    G = G.copy()
+    centrality = nx.closeness_centrality(G.reverse(), distance='weight', wf_improved=True)
+    nx.set_node_attributes(G, centrality, 'centrality')
+    return G
+
+
+def local_closeness_centrality(G, radius):
+    # reverse directed graph to calculate closest path to all other nodes instead of from all other nodes
+    return mm.closeness_centrality(G.reverse(), name='local_centrality', radius=radius, distance='weight').reverse()
