@@ -167,12 +167,12 @@ def _calculate_stop_headway(stops, stop_times):
     """Calculate average waiting time until next trip at each stop."""
     stop_times = stop_times.sort_values(['stop_id', 'arrival_time'])
     stop_times['waiting'] = stop_times.groupby('stop_id')['arrival_time'].shift(-1) - stop_times['arrival_time']
-    stops['headaway'] = stop_times.groupby('stop_id')['waiting'].mean()
+    stops['headway'] = stop_times.groupby('stop_id')['waiting'].mean()
     return stops
 
 
 def _filter_na_headway(stops, stop_times):
-    stops = stops[~stops['headaway'].isna()]
+    stops = stops[~stops['headway'].isna()]
     stop_times = stop_times[stop_times['stop_id'].isin(stops.index)]
     return stops, stop_times
 
@@ -219,7 +219,7 @@ def _clean_stop_times(stops, stop_times):
 
     # raise exception if there are unrealistic trips left after cleaning
     if len(stop_times[(stop_times['speed'] <= 0) | (stop_times['distance'] <= 0) | (stop_times['next_stop_travel_time'] <= 0)]) > 0 or stop_times[['speed', 'distance', 'next_stop_travel_time']].isna().values.any():
-        raise Exception()
+        raise Exception('Unrealistic trips left after stop times cleaning.')
 
     return stop_times
 
@@ -260,7 +260,7 @@ def _create_graph(stops, segments):
     weighted_edges = list(segments.itertuples(index=False, name=None))
     stops['x'] = stops.geometry.x
     stops['y'] = stops.geometry.y
-    nodes = list(zip(stops.index, stops[['y', 'x', 'headaway', 'service_frequency', 'route_id', 'route_type', 'route_short_name']].to_dict('records')))
+    nodes = list(zip(stops.index, stops[['y', 'x', 'headway', 'service_frequency', 'route_id', 'route_type', 'route_short_name']].to_dict('records')))
 
     G = nx.DiGraph(crs=stops.crs)
     G.add_weighted_edges_from(weighted_edges)
@@ -291,8 +291,8 @@ def _add_walk_transfer_edges(G, max_distance, walk_speed_kmph):
             if f != t and not G.has_edge(f, t):
 
                 if G.nodes[f]['route_id'] != G.nodes[t]['route_id']:
-                    # transfer time is defined as the average waiting time for the connection (headaway/2) plus the walking time
-                    transfer_time = G.nodes[t]['headaway'] / 2 + walk_sec
+                    # transfer time is defined as the average waiting time for the connection (headway/2) plus the walking time
+                    transfer_time = G.nodes[t]['headway'] / 2 + walk_sec
                     G.add_edge(f, t, weight=transfer_time, mode='walk')
 
     return G
