@@ -15,7 +15,7 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s', level=lo
 logger = logging.getLogger(__name__)
 
 
-def transit_graph(gtfs_paths, local_crs, route_types=None, time_window=None, agency_ids=None, boundary=None, frac=None, walk_transfer_max_distance=200, walk_speed_kmph=4):
+def transit_graph(gtfs_paths, route_types=None, time_window=None, agency_ids=None, boundary=None, frac=None, walk_transfer_max_distance=200, walk_speed_kmph=4, crs=None):
     """
     Create transit network graph from GTFS file(s).
 
@@ -30,8 +30,6 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, time_window=None, age
     ----------
     gtfs_paths : str or list
         Paths to GTFS files.
-    local_crs : str
-        Metric coordinate reference system to project transit stops to.
     route_types : list, optional
         List of transit route types to include in the graph. If None, all service types are included.
     time_window : list, optional
@@ -46,6 +44,8 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, time_window=None, age
         Maximum distance in meters to allow walking transfer between transit stops.
     walk_speed_kmph : int, optional
         Assumed walking speed in km/h when calculating walking transfer times.
+    crs : str, optional
+        Metric coordinate reference system (CRS) to project transit stops to. If None, appropriate CRS UTM zone is inferred from lat lon bounds.
 
 
     Returns
@@ -65,7 +65,7 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, time_window=None, age
 
     logger.info('STEP 2/5 - Preprocessing GTFS feeds ...')
     routes, trips, stops, stop_times = _combine_feeds(feeds)
-    routes, trips, stops, stop_times = _preprocess(routes, trips, stops, stop_times, local_crs)
+    routes, trips, stops, stop_times = _preprocess(routes, trips, stops, stop_times, crs)
     stops, stop_times = _create_unique_route_stop_ids(routes, trips, stops, stop_times)
 
     if time_window:
@@ -126,13 +126,16 @@ def _combine_feeds(feeds):
     return routes, trips, stops, stop_times
 
 
-def _preprocess(routes, trips, stops, stop_times, local_crs):
-    """Drop unnecessary attributes and clean up duplicates."""
+def _preprocess(routes, trips, stops, stop_times, crs=None):
+    """Drop unnecessary attributes, clean up duplicates, and project geometries to metric coordinate reference system."""
     routes = routes[['route_id', 'route_type', 'route_short_name']].drop_duplicates('route_id')
     trips = trips[['trip_id', 'route_id']].drop_duplicates('trip_id')
-    stops = stops[['stop_id', 'geometry']].drop_duplicates('stop_id').to_crs(local_crs)
+    stops = stops[['stop_id', 'geometry']].drop_duplicates('stop_id')
     stop_times = stop_times[['trip_id', 'stop_id', 'arrival_time', 'stop_sequence']].sort_values(
         by=['trip_id', 'stop_sequence']).drop_duplicates(subset=['trip_id', 'stop_sequence'])
+
+    local_crs = crs or stops.estimate_utm_crs()
+    stops = stops.to_crs(local_crs)
     return routes, trips, stops, stop_times
 
 
