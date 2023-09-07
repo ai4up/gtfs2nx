@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import h3pandas
+from sklearn.preprocessing import StandardScaler
 
 from transit_access import network, utils
 
@@ -46,15 +47,31 @@ def transit_access(G, loc, decay_param=0.5):
 
     stops = utils.nodes_to_gdf(G)
     stops['index'] = stops['frequency'] * stops['centrality']
+    stops['index_norm'] = np.nanmean(StandardScaler().fit_transform(stops[['centrality', 'frequency']]), axis=1)
 
     dm = _distance_matrix(loc, stops.geometry)
-    score = _calculate_gravity_score(
+    score_centrality = _calculate_gravity_score(
         distance_matrix=dm,
         supply=stops['index'].values,
         decay_param=decay_param,
     )
+    score_centrality_norm = _calculate_gravity_score(
+        distance_matrix=dm,
+        supply=stops['index_norm'].values,
+        decay_param=decay_param,
+    )
+    score_spatiotemporal = _calculate_gravity_score(
+        distance_matrix=dm,
+        supply=stops['frequency'].values,
+        decay_param=decay_param,
+    )
+    score_spatial = _calculate_gravity_score(
+        distance_matrix=dm,
+        supply=np.ones(len(stops)),
+        decay_param=decay_param,
+    )
 
-    return score
+    return score_centrality, score_centrality_norm, score_spatiotemporal, score_spatial
 
 
 def transit_access_for_grid(G, area=None, h3_res=9):
@@ -97,7 +114,11 @@ def transit_access_for_grid(G, area=None, h3_res=9):
         area = stops.dissolve().convex_hull.buffer(2000).to_frame('geometry')
 
     hex_grid = _create_hex_grid(h3_res, area)
-    hex_grid['access_score'] = transit_access(G, hex_grid.centroid)
+    s1, s2, s3, s4 = transit_access(G, hex_grid.centroid)
+    hex_grid['score_centrality'] = s1
+    hex_grid['score_centrality_norm'] = s2
+    hex_grid['score_spatiotemporal'] = s3
+    hex_grid['score_spatial'] = s4
     return hex_grid
 
 
@@ -134,8 +155,11 @@ def transit_access_for_neighborhood(G, neighborhoods):
 
     hex_grid = transit_access_for_grid(G, neighborhoods)
     hex_grid['geometry'] = hex_grid.centroid
-    area_access = _mean_per_area(neighborhoods, hex_grid, 'access_score')
-    return area_access
+    neighborhoods = _mean_per_area(neighborhoods, hex_grid, 'score_centrality')
+    neighborhoods = _mean_per_area(neighborhoods, hex_grid, 'score_centrality_norm')
+    neighborhoods = _mean_per_area(neighborhoods, hex_grid, 'score_spatiotemporal')
+    neighborhoods = _mean_per_area(neighborhoods, hex_grid, 'score_spatial')
+    return neighborhoods
 
 
 def _distance_matrix(loc, stops_loc):
@@ -174,7 +198,8 @@ def _calculate_gravity_score(distance_matrix, supply, decay_param):
     # only consider a single stop per route and direction
     # intuition: closeness to two stops of same trip is not better than to one stop with identical distance
     access_to_each_stop['route_id_w_direction'] = access_to_each_stop.index.str.split(network.ID_SEP, n=1).str[1]
-    access_to_each_route = access_to_each_stop.groupby('route_id_w_direction').max()
+    access_to_each_route = access_to_each_stop.groupby('route_id_w_direction').transform(_sum_two_largest)
+    # access_to_each_route = access_to_each_stop.groupby('route_id_w_direction').max() # assuming direction of route in not encoded in index
 
     # summing up the access to all reachable stops
     access = access_to_each_route.sum()
@@ -183,3 +208,14 @@ def _calculate_gravity_score(distance_matrix, supply, decay_param):
 
 def _gaussian_decay(distance_array, sigma):
     return np.exp(-(distance_array**2 / (2.0 * sigma**2)))
+
+
+def _sum_n_largest(x, n):
+    try:
+        return np.partition(x, -n)[-n:].sum()
+    except ValueError:
+        return x.max()
+
+
+def _sum_two_largest(x):
+    return _sum_n_largest(x, n=2)
