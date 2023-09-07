@@ -1,4 +1,4 @@
-# GTFS2nx
+# gtfs2nx
 
 Create routable [NetworkX](https://github.com/networkx/networkx) graph with realistic transfer times from [GTFS](https://developers.google.com/transit/gtfs/) feeds. 🚌 🚆 🚡 
 
