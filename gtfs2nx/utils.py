@@ -188,7 +188,7 @@ def plot_route(G, from_node, to_node):
     nodes, edges = graph_to_gdfs(G)
 
     route = nx.shortest_path(G, from_node, to_node, weight='weight')
-    route_edges = edges.loc[list(zip(route, route[1:], [0] * len(route)))]
+    route_edges = edges.loc[list(zip(route, route[1:]))]
     route_transfers = route_edges[route_edges['mode'] == 'walk'].reset_index()
 
     ax = edges[edges['mode'] != 'walk'].plot(color='lightgrey')
@@ -200,7 +200,7 @@ def plot_route(G, from_node, to_node):
         end = nodes.loc[x['v']]
         duration = int(x['weight'] / 60)
 
-        desc = "transfer"
+        desc = "transfer "
         desc += f"from {start['route_short_name']} ({start['route_type']}) "
         desc += f"to {end['route_short_name']} ({end['route_type']}) "
         desc += f"[{duration} min]"
