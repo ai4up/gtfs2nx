@@ -10,6 +10,7 @@ import partridge as ptg
 from sklearn.neighbors import KDTree
 
 ID_SEP = '@@'
+INDENT = ' ' * 11
 
 logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s', level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -69,7 +70,7 @@ def transit_graph(gtfs_paths, route_types=None, time_window=None, agency_ids=Non
     stops, stop_times = _create_unique_route_stop_ids(routes, trips, stops, stop_times)
 
     if time_window:
-        logger.info(f'Filtering transit service between {time_window[0]} and {time_window[1]}...')
+        logger.info(f'{INDENT}Filtering transit service between {time_window[0]} and {time_window[1]}...')
         stops, stop_times = _filter_by_time(stops, stop_times, time_window)
 
     stop_times = _clean_stop_times(stops, stop_times)
@@ -81,15 +82,15 @@ def transit_graph(gtfs_paths, route_types=None, time_window=None, agency_ids=Non
     segments = _calculate_segment_travel_times(stop_times)
 
     if boundary:
-        logger.info('Filtering by geographical boundary...')
+        logger.info('{INDENT}Filtering by geographical boundary...')
         stops, segments = _filter_by_boundary(stops, segments, boundary)
 
     if route_types:
-        logger.info(f'Filtering by transit service types ({route_types})...')
+        logger.info(f'{INDENT}Filtering by transit service types ({route_types})...')
         stops, segments = _filter_by_type(stops, segments, route_types)
 
     if frac:
-        logger.info(f'Sampling {frac*100}% of all transit routes...')
+        logger.info(f'{INDENT}Sampling {frac*100}% of all transit routes...')
         stops, segments = _sample_routes(stops, segments, frac)
 
     logger.info('STEP 4/5 - Creating NetworkX graph...')

@@ -1,8 +1,0 @@
-partridge
-osmnx
-networkx
-pandas
-numpy
-scikit-learn
-shapely
-h3pandas
