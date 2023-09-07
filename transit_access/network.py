@@ -159,7 +159,7 @@ def _calculate_service_frequency(stops, stop_times, start_time=None, end_time=No
     else:
         duration_hours = 24
 
-    stops['service_frequency'] = stop_times.groupby('stop_id')['arrival_time'].nunique() / duration_hours
+    stops['frequency'] = stop_times.groupby('stop_id')['arrival_time'].nunique() / duration_hours
     return stops
 
 
@@ -260,7 +260,7 @@ def _create_graph(stops, segments):
     weighted_edges = list(segments.itertuples(index=False, name=None))
     stops['x'] = stops.geometry.x
     stops['y'] = stops.geometry.y
-    nodes = list(zip(stops.index, stops[['y', 'x', 'headway', 'service_frequency', 'route_id', 'route_type', 'route_short_name']].to_dict('records')))
+    nodes = list(zip(stops.index, stops[['y', 'x', 'headway', 'frequency', 'route_id', 'route_type', 'route_short_name']].to_dict('records')))
 
     G = nx.DiGraph(crs=stops.crs)
     G.add_weighted_edges_from(weighted_edges)

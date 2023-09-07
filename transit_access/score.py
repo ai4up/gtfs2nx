@@ -45,7 +45,7 @@ def transit_access(G, loc, decay_param=0.5):
     """
 
     stops = utils.nodes_to_gdf(G)
-    stops['index'] = stops['n_departures'] * stops['centrality']
+    stops['index'] = stops['frequency'] * stops['centrality']
 
     dm = _distance_matrix(loc, stops.geometry)
     score = _calculate_gravity_score(
