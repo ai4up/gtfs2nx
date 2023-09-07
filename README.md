@@ -36,7 +36,7 @@ G = gx.transit_graph(
 )
 ```
 
-See [API docs](./docs/api.md) for more details.
+See the [API docs](./docs/api.md) for more details and the [getting-started notebook](./docs/getting_started.ipynb) for a small demo.
 
 
 ## Exemplary NetworkX analysis
