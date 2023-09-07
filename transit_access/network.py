@@ -15,7 +15,7 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s', level=lo
 logger = logging.getLogger(__name__)
 
 
-def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_time=None, agency_ids=None, boundary=None, frac=None, walk_transfer_max_distance=200, walk_speed_kmph=4):
+def transit_graph(gtfs_paths, local_crs, route_types=None, time_window=None, agency_ids=None, boundary=None, frac=None, walk_transfer_max_distance=200, walk_speed_kmph=4):
     """
     Create transit network graph from GTFS file(s).
 
@@ -34,10 +34,8 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_
         Metric coordinate reference system to project transit stops to.
     route_types : list, optional
         List of transit route types to include in the graph. If None, all service types are included.
-    start_time : str, optional
-        ISO 8601-formatted start time to consider only services within a time window.
-    end_time : str, optional
-        ISO 8601-formatted end time to consider only services within a time window.
+    time_window : tuple, optional
+        Pair of ISO 8601-formatted times to include services only within a time window.
     agency_ids : list, optional
         List of agencies (according to agency.txt) whose transit services are to be included in the graph. If None, all agencies are included.
     boundary : shapely.geometry.Polygon, optional
@@ -70,15 +68,15 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, start_time=None, end_
     routes, trips, stops, stop_times = _preprocess(routes, trips, stops, stop_times, local_crs)
     stops, stop_times = _create_unique_route_stop_ids(routes, trips, stops, stop_times)
 
-    if start_time and end_time:
-        logger.info(f'Filtering transit service between {start_time} and {end_time}...')
-        stops, stop_times = _filter_by_time(stops, stop_times, start_time, end_time)
+    if time_window:
+        logger.info(f'Filtering transit service between {time_window[0]} and {time_window[1]}...')
+        stops, stop_times = _filter_by_time(stops, stop_times, time_window)
 
     stop_times = _clean_stop_times(stops, stop_times)
 
     logger.info('STEP 3/5 - Determining service frequency, transfer waiting & travel times...')
     stops = _calculate_stop_headway(stops, stop_times)
-    stops = _calculate_service_frequency(stops, stop_times, start_time, end_time)
+    stops = _calculate_service_frequency(stops, stop_times, time_window)
     stops, stop_times = _filter_na_headway(stops, stop_times)
     segments = _calculate_segment_travel_times(stop_times)
 
@@ -151,10 +149,10 @@ def _create_unique_route_stop_ids(routes, trips, stops, stop_times):
     return route_stops, stop_times
 
 
-def _calculate_service_frequency(stops, stop_times, start_time=None, end_time=None):
-    if start_time and end_time:
-        start = _to_seconds(datetime.time.fromisoformat(start_time))
-        end = _to_seconds(datetime.time.fromisoformat(end_time))
+def _calculate_service_frequency(stops, stop_times, time_window):
+    """Calculate average number of departures per hour at each stop."""
+    if time_window:
+        start, end = _parse_time_window(time_window)
         duration_hours = (end - start) / 60 / 60
     else:
         duration_hours = 24
@@ -224,12 +222,17 @@ def _clean_stop_times(stops, stop_times):
     return stop_times
 
 
-def _filter_by_time(stops, stop_times, start_time, end_time):
-    start_time = _to_seconds(datetime.time.fromisoformat(start_time))
-    end_time = _to_seconds(datetime.time.fromisoformat(end_time))
-    stop_times = stop_times[stop_times['arrival_time'].between(start_time, end_time)]
+def _filter_by_time(stops, stop_times, time_window):
+    start, end = _parse_time_window(time_window)
+    stop_times = stop_times[stop_times['arrival_time'].between(start, end)]
     stops = stops.loc[stop_times['stop_id']]
     return stops, stop_times
+
+
+def _parse_time_window(window):
+    start = _to_seconds(datetime.time.fromisoformat(window[0]))
+    end = _to_seconds(datetime.time.fromisoformat(window[1]))
+    return start, end
 
 
 def _to_seconds(time):
@@ -270,6 +273,7 @@ def _create_graph(stops, segments):
 
 
 def _add_walk_transfer_edges(G, max_distance, walk_speed_kmph):
+    """Add edges for walking transfer between nearby stops of different routes."""
     stops = pd.DataFrame.from_dict(dict(G.nodes(data=True)), orient='index')
     stops_location = stops[['x', 'y']].to_numpy()
 
