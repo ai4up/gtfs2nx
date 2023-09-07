@@ -7,6 +7,19 @@ from shapely.geometry import Point
 
 
 def nodes_to_df(G):
+    """
+    Convert DiGraph nodes to DataFrame.
+
+    Parameters
+    ----------
+    G : networkx.DiGraph
+        Transit network graph.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame of nodes including node attributes.
+    """
     nodes, data = zip(*G.nodes(data=True))
     df = pd.DataFrame(data, index=nodes)
 
@@ -14,6 +27,19 @@ def nodes_to_df(G):
 
 
 def nodes_to_gdf(G):
+    """
+    Convert DiGraph nodes to GeoDataFrame.
+
+    Parameters
+    ----------
+    G : networkx.DiGraph
+        Transit network graph.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame of nodes including node attributes and geometries.
+    """
     crs = G.graph['crs']
     df = nodes_to_df(G)
     geom = gpd.points_from_xy(df['x'], df['y'])
@@ -23,17 +49,43 @@ def nodes_to_gdf(G):
 
 
 def edges_to_df(G):
+    """
+    Convert DiGraph edges to DataFrame.
+
+    Parameters
+    ----------
+    G : networkx.DiGraph
+        Transit network graph.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame of edges including edge attributes.
+    """
     if G.is_multigraph():
         raise Exception('This function does not support multigraphs.')
 
     u, v, data = zip(*G.edges(data=True))
     index = pd.MultiIndex.from_arrays([u, v], names=['u', 'v'])
     df = pd.DataFrame(data, index=index)
-    
+
     return df
 
 
 def edges_to_gdf(G):
+    """
+    Convert DiGraph edges to GeoDataFrame.
+
+    Parameters
+    ----------
+    G : networkx.DiGraph
+        Transit network graph.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame of edges including edge attributes and geometries.
+    """
     crs = G.graph['crs']
     df = edges_to_df(G)
     nodes_x = nx.get_node_attributes(G, 'x')
@@ -45,6 +97,21 @@ def edges_to_gdf(G):
 
 
 def graph_to_gdfs(G):
+    """
+    Convert DiGraph nodes and edges to GeoDataFrames.
+
+    Parameters
+    ----------
+    G : networkx.DiGraph
+        Transit network graph.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame of nodes including node attributes and geometries.
+    geopandas.GeoDataFrame
+        GeoDataFrame of edges including edge attributes and geometries.
+    """
     return nodes_to_gdf(G), edges_to_gdf(G)
 
 
@@ -53,6 +120,7 @@ def closeness_centrality(G):
     G = G.copy()
     centrality = nx.closeness_centrality(G.reverse(), distance='weight', wf_improved=True)
     nx.set_node_attributes(G, centrality, 'centrality')
+
     return G
 
 
@@ -61,13 +129,31 @@ def local_closeness_centrality(G, radius):
     return mm.closeness_centrality(G.reverse(), name='local_centrality', radius=radius, distance='weight').reverse()
 
 
-def plot_edges(G, attr=None, inc_walk_edges=False, adjust_linewith=True):
+def plot_network(G, attr=None, inc_walk_edges=False, adjust_linewith=True):
+    """
+    Plot DiGraph edges with node or edge attribute color coded.
+
+    Parameters
+    ----------
+    G : networkx.DiGraph
+        Transit network graph.
+    inc_walk_edges : bool
+        Include walking transfer edges in plot.
+    adjust_linewith : bool
+        Adjust edge linewidth based on attribute value.
+
+    Returns
+    -------
+    matplotlib.axes.Axes
+        Axis of plot.
+
+    """
     edges = edges_to_gdf(G)
 
     if attr and attr not in edges.columns:
         nodes = nodes_to_df(G)
         edges = _mean_node_attr(edges, nodes, attr)
-    
+
     if adjust_linewith:
         attr_val = edges[edges['mode'] != 'walk'][attr]
         linewidth = _scale_to_range(attr_val, range=[0.1, 2], quantiles=[.05, .95])
@@ -76,18 +162,38 @@ def plot_edges(G, attr=None, inc_walk_edges=False, adjust_linewith=True):
 
     edges = edges.sort_values(attr, ascending=True)
     ax = edges[edges['mode'] != 'walk'].plot(column=attr, linewidth=linewidth, zorder=1, legend=True, legend_kwds={'shrink': 0.6})
-    
+
     if inc_walk_edges:
         edges[edges['mode'] == 'walk'].plot(color='lightgrey', linewidth=0.2, zorder=0, ax=ax)
 
     ax.set_axis_off()
     ax.set_title(attr)
 
+    return ax
 
-def plot_route(G, from_idx, to_idx):
+
+def plot_route(G, from_node, to_node):
+    """
+    Plot shortest path between two stops and annonate route transfers.
+
+    Parameters
+    ----------
+    G : networkx.DiGraph
+        Transit network graph.
+    from_node : str
+        Stop ID of origin node.
+    from_node : str
+        Stop ID of destination node.
+
+    Returns
+    -------
+    matplotlib.axes.Axes
+        Axis of plot.
+
+    """
     nodes, edges = graph_to_gdfs(G)
 
-    route = nx.shortest_path(G, nodes.index[from_idx], nodes.index[to_idx], weight='weight')
+    route = nx.shortest_path(G, from_node, to_node, weight='weight')
     route_edges = edges.loc[list(zip(route, route[1:], [0] * len(route)))]
     route_transfers = route_edges[route_edges['mode'] == 'walk'].reset_index()
 
@@ -109,6 +215,8 @@ def plot_route(G, from_idx, to_idx):
 
     route_transfers.apply(lambda x: ax.annotate(text=_transfer_desc(x), xy=x.geometry.centroid.coords[0], ha='center'), axis=1)
     ax.set_axis_off()
+
+    return ax
 
 
 def _scale_to_range(s, range, quantiles=None):
