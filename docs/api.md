@@ -1,7 +1,7 @@
 # Package API docs
 
-* [gtfs2nx.network](#gtfs2nx.network)
-  * [transit\_graph](#gtfs2nx.network.transit_graph)
+* [gtfs2nx](#gtfs2nx)
+  * [transit\_graph](#gtfs2nx.transit_graph)
 * [gtfs2nx.utils](#gtfs2nx.utils)
   * [nodes\_to\_df](#gtfs2nx.utils.nodes_to_df)
   * [nodes\_to\_gdf](#gtfs2nx.utils.nodes_to_gdf)
@@ -12,11 +12,11 @@
   * [plot\_route](#gtfs2nx.utils.plot_route)
 
 
-<a id="gtfs2nx.network"></a>
+<a id="gtfs2nx"></a>
 
-## gtfs2nx.network
+## gtfs2nx
 
-<a id="gtfs2nx.network.transit_graph"></a>
+<a id="gtfs2nx.transit_graph"></a>
 
 ### transit\_graph
 
