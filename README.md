@@ -59,5 +59,5 @@ centrality = nx.closeness_centrality(G, distance='weight')
 Build from source:
 ```
 poetry build
-pip install dist/gtfs2nx-*.whl --force-reinstall --no-deps
+pip install dist/gtfs2nx-*.whl
 ```
