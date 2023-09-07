@@ -28,13 +28,13 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, time_window=None, age
 
     Parameters
     ----------
-    gtfs_paths : list
+    gtfs_paths : str or list
         Paths to GTFS files.
     local_crs : str
         Metric coordinate reference system to project transit stops to.
     route_types : list, optional
         List of transit route types to include in the graph. If None, all service types are included.
-    time_window : tuple, optional
+    time_window : list, optional
         Pair of ISO 8601-formatted times to include services only within a time window.
     agency_ids : list, optional
         List of agencies (according to agency.txt) whose transit services are to be included in the graph. If None, all agencies are included.
@@ -102,6 +102,9 @@ def transit_graph(gtfs_paths, local_crs, route_types=None, time_window=None, age
 
 
 def _get_busiest_feeds(gtfs_paths, agency_ids=None):
+    if not isinstance(gtfs_paths, (list, tuple)):
+        gtfs_paths = [gtfs_paths]
+
     return [_get_busiest_feed(path, agency_ids) for path in gtfs_paths]
 
 
