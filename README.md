@@ -16,7 +16,7 @@ Create routable [NetworkX](https://github.com/networkx/networkx) graph with real
 
 ## Install
 ```bash
-pip install gtfs2nx
+pip install git+https://github.com/ai4up/gtfs2nx@v0.1.0
 ```
 
 ## Usage
@@ -41,6 +41,8 @@ See the [API docs](./docs/api.md) for more details and the [getting-started note
 
 ## Exemplary NetworkX analysis
 ```Python
+import networkx as nx
+
 # access precomputed stop characteristics
 frequency = nx.get_node_attributes(G, 'frequency')
 

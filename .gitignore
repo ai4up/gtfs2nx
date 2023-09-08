@@ -2,3 +2,4 @@ data/
 demo/
 slurm/
 __pycache__/
+*.zip
