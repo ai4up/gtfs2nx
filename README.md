@@ -56,6 +56,10 @@ travel_times = nx.single_source_dijkstra_path_length(G, source=from_stop, weight
 centrality = nx.closeness_centrality(G, distance='weight')
 ```
 
+## Further use cases
+
+* [Using graph neural networks to classify missing GTFS route types](https://gist.github.com/FlorianNachtigall/9df1c9f7417aa512220756a35c36b45f)
+
 
 ## Development
 Build from source:
