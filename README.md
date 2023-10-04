@@ -59,10 +59,11 @@ centrality = nx.closeness_centrality(G, distance='weight')
 ## Further use cases
 
 * [Using graph neural networks to classify missing GTFS route types](https://gist.github.com/FlorianNachtigall/9df1c9f7417aa512220756a35c36b45f)
+* [Validating NetworkX transit graph: Comparing routes and travel times to Google Maps](https://gist.github.com/FlorianNachtigall/3e0d2f5e4fa8b2e893a29445a99dfb4f)
 
 
 ## Development
-Build from source:
+Build from source using [poetry](https://python-poetry.org/):
 ```
 poetry build
 pip install dist/gtfs2nx-*.whl
