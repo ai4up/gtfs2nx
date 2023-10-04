@@ -123,7 +123,7 @@ def closeness_centrality(G):
     return G
 
 
-def plot_network(G, attr=None, inc_walk_edges=False, adjust_linewith=True):
+def plot_network(G, attr, inc_walk_edges=False, adjust_linewith=True):
     """
     Plot DiGraph edges with node or edge attribute color coded.
 
@@ -131,6 +131,8 @@ def plot_network(G, attr=None, inc_walk_edges=False, adjust_linewith=True):
     ----------
     G : networkx.DiGraph
         Transit network graph.
+    attr : str
+        Node or edge attribute to color code.
     inc_walk_edges : bool
         Include walking transfer edges in plot.
     adjust_linewith : bool
