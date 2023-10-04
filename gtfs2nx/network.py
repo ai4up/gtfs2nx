@@ -223,8 +223,11 @@ def _clean_stop_times(stops, stop_times):
     stop_times = stop_times[~stop_times['trip_id'].isin(corrupt_trips)]
 
     # raise exception if there are unrealistic trips left after cleaning
-    if len(stop_times[(stop_times['speed'] <= 0) | (stop_times['distance'] <= 0) | (stop_times['next_stop_travel_time'] <= 0)]) > 0 or stop_times[['speed', 'distance', 'next_stop_travel_time']].isna().values.any():
-        raise Exception('Unrealistic trips left after stop times cleaning.')
+    if len(stop_times[(stop_times['speed'] <= 0) | (stop_times['distance'] <= 0) | (stop_times['next_stop_travel_time'] <= 0)]) > 0:
+        logger.error('Unrealistic trips left after stop times cleaning.')
+
+    if stop_times[['speed', 'distance', 'next_stop_travel_time']].isna().values.any():
+        logger.error('Trips with NaN values left after stop times cleaning.')
 
     return stop_times
 
