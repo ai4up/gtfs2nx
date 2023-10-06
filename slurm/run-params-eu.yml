@@ -1,0 +1,131 @@
+- city: Leipzig
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Leipzig_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Leipzig.zip]
+  gtfs_url: ["https://opendata.leipzig.de/dataset/8803f612-2ce1-4643-82d1-213434889200/resource/b38955c4-431c-4e8b-a4ef-9964a3a2c95d/download/gtfsmdvlvb.zip"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+
+- city: Dresden
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Dresden_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Germany-OpenData.zip]
+  gtfs_url: []
+  agency_ids: [8190, 8194, 10437]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Duesseldorf
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Duesseldorf_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Germany-OpenData.zip]
+  gtfs_url: []
+  agency_ids: [7762, 7763, 7764, 7765, 14173]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Frankfurt
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Frankfurt_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Germany-OpenData.zip]
+  gtfs_url: []
+  agency_ids: [8639, 12201, 8730]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Kassel
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Kassel_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Germany-OpenData.zip]
+  gtfs_url: []
+  agency_ids: [9141, 9142, 9230]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Magdeburg
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Magdeburg_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Germany-OpenData.zip]
+  gtfs_url: []
+  agency_ids: [8891, 10437]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+  
+- city: Clermont
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Clermont_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Clermont.zip]
+  gtfs_url: ["https://opendata.clermontmetropole.eu/api/datasets/1.0/gtfs-smtc/attachments/gtfs_t2c_zip"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+  
+- city: Dijon
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Dijon_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Dijon.zip]
+  gtfs_url: ["https://www.data.gouv.fr/fr/datasets/r/e0dbd217-15cd-4e28-9459-211a27511a34"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Lille
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Lille_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Lille.zip]
+  gtfs_url: ["https://opendata.lillemetropole.fr/api/datasets/1.0/transport_arret_transpole-point/alternative_exports/gtfszip"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Lyon
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Lyon_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Lyon.zip]
+  gtfs_url: ["https://storage.googleapis.com/storage/v1/b/mdb-latest/o/fr-rhone-transports-en-commun-lyonnais-tcl-gtfs-1020.zip?alt=media"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Montpellier
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Montpellier_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Montpellier.zip]
+  gtfs_url: ["https://data.montpellier3m.fr/sites/default/files/ressources/TAM_MMM_GTFS.zip"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Nantes
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Nantes_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Nantes.zip]
+  gtfs_url: ["https://data.nantesmetropole.fr/explore/dataset/244400404_tan-arrets-horaires-circuits/files/b1c551e07a5e3ffc2fcc4099b2097011/download/"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Nimes
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Nimes_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Nimes.zip]
+  gtfs_url: ["https://www.data.gouv.fr/fr/datasets/r/78ac0aed-92ba-450f-bd8f-6fca315e9a52"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Paris
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Paris_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Paris_lightrail1.zip, /p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Paris_lightrail2.zip, /p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Paris_regional.zip, /p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Paris_metro.zip]
+  gtfs_url: ["https://data.iledefrance-mobilites.fr/explore/dataset/offre-horaires-tc-gtfs-idfm/files/a925e164271e4bca93433756d6a340d1/download/", "https://transitfeeds.com/p/stif/822/latest/download", "http://files.transilien.com/horaires/gtfs/export-TN-GTFS-LAST.zip", "https://transitfeeds.com/p/regie-autonome-des-transports-parisiens/413/latest/download"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Paris
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Paris_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Paris.zip]
+  gtfs_url: ["https://eu.ftp.opendatasoft.com/stif/GTFS/IDFM-gtfs.zip"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Toulouse
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Toulouse_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Toulouse.zip]
+  gtfs_url: ["https://data.toulouse-metropole.fr/api/v2/catalog/datasets/tisseo-gtfs/files/fc1dda89077cf37e4f7521760e0ef4e9"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Madrid
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Madrid_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Madrid_bus.zip, /p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Madrid_lightrail.zip, /p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Madrid_metro.zip,  /p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Madrid_commuterrail.zip, /p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Madrid_localbus.zip]
+  gtfs_url: ["http://crtm.maps.arcgis.com/sharing/rest/content/items/885399f83408473c8d815e40c5e702b7/data", "https://crtm.maps.arcgis.com/sharing/rest/content/items/aaed26cc0ff64b0c947ac0bc3e033196/data", "http://crtm.maps.arcgis.com/sharing/rest/content/items/5c7f2951962540d69ffe8f640d94c246/data", "https://www.arcgis.com/sharing/rest/content/items/1a25440bf66f499bae2657ec7fb40144/data", "//www.arcgis.com/sharing/rest/content/items/868df0e58fca47e79b942902dffd7da0/data"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Wien
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Wien_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Wien.zip]
+  gtfs_url: ["http://www.wienerlinien.at/ogd_realtime/doku/ogd/gtfs/gtfs.zip"]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+
+- city: Berlin
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Berlin_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Berlin.zip]
+  gtfs_url: ["http://vbb.de/vbbgtfs"]
+  agency_ids: [1, 108, 796]
+  crs: "EPSG:3035"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results
+- city: Potsdam
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-eu/spatial-units/Potsdam_postcodes.gpkg
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-eu/gtfs-feeds/Potsdam.zip]
+  gtfs_url: ["http://vbb.de/vbbgtfs"]
+  crs: "EPSG:3035"
+  agency_ids: [108, 150, 846]
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results

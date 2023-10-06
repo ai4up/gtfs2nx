@@ -1,0 +1,31 @@
+jobs:
+  - name: download
+    script: /p/projects/eubucco/other_projects/transit-access/slurm/download.py
+    param_files:
+      - /p/projects/eubucco/other_projects/transit-access/slurm/run-params-eu.yml
+    log_dir: /p/projects/eubucco/other_projects/transit-access/slurm/logs
+    resources:
+      cpus: 1
+      time: "24:00:00"
+      partition: io
+
+  - name: calculate-index
+    script: /p/projects/eubucco/other_projects/transit-access/slurm/run.py
+    param_files:
+      - /p/projects/eubucco/other_projects/transit-access/slurm/run-params-eu.yml
+    log_dir: /p/projects/eubucco/other_projects/transit-access/slurm/logs
+    resources:
+      partition: largemem
+      cpus: 16
+      time: "06:00:00"
+
+properties:
+  conda_env: "/home/floriann/.conda/envs/transit-access"
+  account: eubucco
+  log_level: INFO
+  exp_backoff_factor: 4
+  max_retries: 1
+  poll_interval: 30
+  slack:
+    channel: "#test-slurm-bot"
+    token: <token>

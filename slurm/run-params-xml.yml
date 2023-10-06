@@ -1,0 +1,55 @@
+- city: Berlin
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-xml/gtfs_feeds/ber]
+  crs: "EPSG:25833"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results-xml/
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-xml/bounds/ber_geom.gpkg
+  agency_ids: [1, 108, 796]
+  h3_res: 9
+  start_time: "06:00"
+  end_time: "10:00"
+  route_types: [109, 400, 700, 900]
+
+- city: Bogota
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-xml/gtfs_feeds/bog]
+  crs: "EPSG:21897"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results-xml/
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-xml/bounds/bog_geom.gpkg
+  h3_res: 9
+  start_time: "06:00"
+  end_time: "10:00"
+
+- city: Boston
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-xml/gtfs_feeds/bos]
+  crs: "EPSG:26914"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results-xml/
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-xml/bounds/bos_geom.gpkg
+  h3_res: 9
+  start_time: "06:00"
+  end_time: "10:00"
+
+- city: LAX
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-xml/gtfs_feeds/lax_bus, /p/projects/eubucco/other_projects/transit-access/data-xml/gtfs_feeds/lax_rail]
+  crs: "EPSG:26914"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results-xml/
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-xml/bounds/lax_geom.gpkg
+  h3_res: 9
+  start_time: "06:00"
+  end_time: "10:00"
+
+- city: SF
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-xml/gtfs_feeds/sfo]
+  crs: "EPSG:26914"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results-xml/
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-xml/bounds/sfo_geom.gpkg
+  h3_res: 9
+  start_time: "06:00"
+  end_time: "10:00"
+
+- city: Rio
+  gtfs_path: [/p/projects/eubucco/other_projects/transit-access/data-xml/gtfs_feeds/rio]
+  crs: "EPSG:5641"
+  target_dir: /p/projects/eubucco/other_projects/transit-access/results-xml/
+  boundary_path: /p/projects/eubucco/other_projects/transit-access/data-xml/bounds/rio_geom.gpkg
+  h3_res: 9
+  start_time: "06:00"
+  end_time: "10:00"
