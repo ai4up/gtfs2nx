@@ -278,6 +278,7 @@ def _create_graph(stops, segments):
     G = nx.DiGraph(crs=stops.crs)
     G.add_weighted_edges_from(weighted_edges)
     G.add_nodes_from(nodes)
+    nx.set_edge_attributes(G, 'transit', 'mode')
 
     return G
 
