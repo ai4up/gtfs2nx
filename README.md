@@ -68,3 +68,8 @@ Build from source using [poetry](https://python-poetry.org/):
 poetry build
 pip install dist/gtfs2nx-*.whl
 ```
+
+Configure post-checkout hook for branch specific .gitignore files:
+```
+git config --local core.hooksPath .githooks/
+```

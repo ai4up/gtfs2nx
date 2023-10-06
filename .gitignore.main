@@ -1,0 +1,11 @@
+blog/
+data*/
+demo/
+dist/
+gists/
+notebooks/
+results*/
+slurm/
+__pycache__/
+*.pkl
+*.zip

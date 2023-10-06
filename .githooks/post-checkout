@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# based on https://gist.github.com/wizioo/c89847c7894ede628071
+
+old_ref=$1
+new_ref=$2
+branch_switched=$3
+
+if [[ $branch_switched != "1" ]]
+then
+    exit 0
+fi
+
+echo "---- POST CHECKOUT ----"
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+hook_dir=$(dirname $0)
+root_dir="$(pwd -P)"
+info_dir="${root_dir}/.git/info"
+exclude="${info_dir}/exclude"
+branch_gitignore="${root_dir}/.gitignore.${current_branch}"
+
+if [[ -f "$branch_gitignore" ]]
+then
+	echo "Use .gitignore.${current_branch} as exclude file"
+    mkdir -p "$info_dir"
+    cp "$branch_gitignore" "$exclude"
+fi
+
+echo "---- POST CHECKOUT END ----"
