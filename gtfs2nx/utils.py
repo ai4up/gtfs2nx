@@ -1,8 +1,7 @@
 import pandas as pd
 import geopandas as gpd
 import networkx as nx
-from shapely.geometry import LineString
-from shapely.geometry import Point
+from shapely.geometry import Point, LineString
 
 
 def nodes_to_df(G):
@@ -145,19 +144,24 @@ def plot_network(G, attr, inc_walk_edges=False, adjust_linewith=True):
 
     """
     edges = edges_to_gdf(G)
+    nodes = nodes_to_df(G)
 
-    if attr and attr not in edges.columns:
-        nodes = nodes_to_df(G)
-        edges = _mean_node_attr(edges, nodes, attr)
+    if attr not in edges.columns:
+        if pd.api.types.is_numeric_dtype(nodes[attr]):
+            edges = _mean_node_attr(edges, nodes, attr)
+        else:
+            edges = _source_node_attr(edges, nodes, attr)
 
-    if adjust_linewith:
+    numeric_attr = pd.api.types.is_numeric_dtype(edges[attr])
+
+    if adjust_linewith and numeric_attr:
         attr_val = edges[edges['mode'] != 'walk'][attr]
         linewidth = _scale_to_range(attr_val, range=[0.1, 2], quantiles=[.05, .95])
     else:
         linewidth = None
 
     edges = edges.sort_values(attr, ascending=True)
-    ax = edges[edges['mode'] != 'walk'].plot(column=attr, linewidth=linewidth, zorder=1, legend=True, legend_kwds={'shrink': 0.6})
+    ax = edges[edges['mode'] != 'walk'].plot(column=attr, linewidth=linewidth, zorder=1, legend=True, legend_kwds={'shrink': 0.6} if numeric_attr else None)
 
     if inc_walk_edges:
         edges[edges['mode'] == 'walk'].plot(color='lightgrey', linewidth=0.2, zorder=0, ax=ax)
@@ -235,5 +239,12 @@ def _mean_node_attr(edges, nodes, attr):
     v = edges.index.get_level_values('v')
     mean = (nodes.loc[u][attr].values + nodes.loc[v][attr].values) / 2
     edges[attr] = mean
+
+    return edges
+
+
+def _source_node_attr(edges, nodes, attr):
+    u = edges.index.get_level_values('u')
+    edges[attr] = nodes.loc[u][attr]
 
     return edges
