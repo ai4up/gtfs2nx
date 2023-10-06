@@ -216,11 +216,17 @@ def _clean_stop_times(stops, stop_times):
     corrupt_trips = stop_times[stop_times['next_stop_travel_time'] <= 0]['trip_id']
     stop_times = stop_times[~stop_times['trip_id'].isin(corrupt_trips)]
 
+    if len(corrupt_trips) > 0:
+        logger.info(f'Removed {corrupt_trips.nunique()} trips with contradictory stop sequence and departure times.')
+
     # remove trips with unrealistic euclidean travel speed of more than 30m/s (108km/h)
     stop_times = _calculate_segment_euclidean_distance(stop_times, stops)
     stop_times['speed'] = stop_times['distance'] / stop_times['next_stop_travel_time']
     corrupt_trips = stop_times[stop_times['speed'] > 30]['trip_id']
     stop_times = stop_times[~stop_times['trip_id'].isin(corrupt_trips)]
+
+    if len(corrupt_trips) > 0:
+        logger.info(f'Removed {corrupt_trips.nunique()} trips with unrealistic travel speeds (>108km/h).')
 
     # raise exception if there are unrealistic trips left after cleaning
     if len(stop_times[(stop_times['speed'] <= 0) | (stop_times['distance'] <= 0) | (stop_times['next_stop_travel_time'] <= 0)]) > 0:
