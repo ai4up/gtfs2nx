@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gtfs2nx"
-version = "0.1.0"
+version = "0.2.0"
 description = "Convert GTFS feeds to realistic, routable NetworkX graph."
 authors = ["Florian Nachtigall <nachtigall@tu-berlin.de>"]
 readme = "README.md"
