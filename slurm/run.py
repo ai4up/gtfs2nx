@@ -30,11 +30,12 @@ if __name__ == '__main__':
     timestr = time.strftime('%Y%m%d-%H-%M-%S')
     area = gpd.read_file(boundary_path).to_crs(crs) if boundary_path else None
     boundary = area.dissolve().geometry[0] if area is not None else None
+    time_window = (start_time, end_time) if start_time else None
 
     G = gtfs2nx.transit_graph(
         gtfs_path,
         route_types=route_types,
-        time_window=(start_time, end_time),
+        time_window=time_window,
         agency_ids=agency_ids,
         boundary=boundary,
         frac=frac,
@@ -53,7 +54,8 @@ if __name__ == '__main__':
     # with open(file_path, 'rb') as f:
     #     G = pickle.load(f)
 
-    access_score = transitaccess.transit_access_for_neighborhood(G, area, h3_res=h3_res)
+    stops = gtfs2nx.utils.nodes_to_gdf(G)
+    access_score = transitaccess.transit_access_for_neighborhood(stops, area, h3_res=h3_res)
     access_score.to_pickle(f'{target_dir}/access-score-{city}-{timestr}.pkl')
     access_score.to_file(f'{target_dir}/access-score-{city}-{timestr}.gpkg', driver='GPKG')
 
