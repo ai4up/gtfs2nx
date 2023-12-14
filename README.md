@@ -16,7 +16,7 @@ Create routable [NetworkX](https://github.com/networkx/networkx) graph with real
 
 ## Install
 ```bash
-pip install git+https://github.com/ai4up/gtfs2nx@v0.2.0
+pip install gtfs2nx
 ```
 
 ## Usage
