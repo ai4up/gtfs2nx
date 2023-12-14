@@ -681,12 +681,14 @@ xml = ["lxml (>=4.8.0)"]
 
 [[package]]
 name = "partridge"
-version = "1.1.1"
+version = "1.1.2"
 description = "Partridge is a python library for working with GTFS feeds using pandas DataFrames."
 optional = false
 python-versions = ">=3.6, <4"
-files = []
-develop = false
+files = [
+    {file = "partridge-1.1.2-py2.py3-none-any.whl", hash = "sha256:18e1bf451153f6f8ac74f165bf8662dae39ee1c283125f44746717461b43a55f"},
+    {file = "partridge-1.1.2.tar.gz", hash = "sha256:9d9ba044f4123a83c6419dde073c15ac71b63301ed398386d6d3101ac8381e34"},
+]
 
 [package.dependencies]
 charset-normalizer = "*"
@@ -696,12 +698,6 @@ pandas = "*"
 
 [package.extras]
 full = ["geopandas"]
-
-[package.source]
-type = "git"
-url = "ssh://git@github.com/remix/partridge.git"
-reference = "master"
-resolved_reference = "c3afb135b42401678bc894bdfef729699f65dd7c"
 
 [[package]]
 name = "pillow"
@@ -1018,4 +1014,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "c2f876b8fa7b815376e3a9958a9de1391f327c239c93ad9fffa8d1897ac554af"
+content-hash = "99d79a36802cd3cd36c6d9464b2163eb08a039e91b39db80b2c27ebc5314a08b"
