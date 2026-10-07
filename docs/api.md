@@ -30,7 +30,17 @@ def transit_graph(gtfs_paths,
                   frac=None,
                   walk_transfer_max_distance=200,
                   walk_speed_kmph=4,
-                  crs=None)
+                  crs=None,
+                  date=None,
+                  feed_ids=None,
+                  max_headway=None,
+                  max_speed_kmph=108,
+                  min_segment_travel_time=None,
+                  max_speed_repair_factor=1.0,
+                  transfer_model='headway',
+                  max_transfer_wait=None,
+                  transfer_wait_quantile=None,
+                  min_transfer_time=0)
 ```
 
 Create transit network graph from GTFS file(s).
@@ -39,7 +49,7 @@ Nodes correspond to transit stops and edges to transit connections between stops
 Each node and each edge belongs to only a single transit route.
 If multiple routes serve the same station, they are depicted as multiple nodes.
 Edges for walking transfer between nearby nodes of different routes are added.
-For each node, the global closeness centrality and the number of departures are calculated.
+For each node, the average headway and the service frequency are calculated.
 
 
 #### Parameters
@@ -47,27 +57,66 @@ For each node, the global closeness centrality and the number of departures are 
     > Paths to GTFS files.
 
 * **route_types** : list, optional
-    > List of transit route types to include in the graph. If None, all service types are include.
+    > List of transit route types to include in the graph. If None, all service types are included.
 
 * **time_window** : list, optional
-    > Pair of ISO 8601-formatted times to include services only within a time window
+    > Pair of ISO 8601-formatted times to include services only within a time window.
 
 * **agency_ids** : list, optional
-    > List of agencies (according to agency.txt) whose transit services are to be included n the graph. If None, all agencies are included.
+    > List of agencies (according to agency.txt) whose transit services are to be included in the graph. If None, all agencies are included.
 
 * **boundary** : shapely.geometry.Polygon, optional
-    > Polygon to filter transit stops by.
+    > Polygon to filter transit stops by. Expected in the same CRS as `crs`.
+
 * **frac** : float, optional
-    > Fraction, allowing to randomly sample a subset of transit routes to be included i the graph.
+    > Fraction, allowing to randomly sample a subset of transit routes to be included in the graph.
 
 * **walk_transfer_max_distance** : int, optional
-    > Maximum distance in meters to allow walking transfer between transit stops
+    > Maximum distance in meters to allow walking transfer between transit stops.
 
 * **walk_speed_kmph** : int, optional
-    > Assumed walking speed in km/h when calculating walking transfer times
+    > Assumed walking speed in km/h when calculating walking transfer times.
 
 * **crs** : str, optional
-    > Metric coordinate reference system (CRS) to project transit stops to. If None, apropriate CRS UTM zone is inferred from lat lon bounds.
+    > Metric coordinate reference system (CRS) to project transit stops to. If None, appropriate CRS UTM zone is inferred from lat lon bounds.
+
+* **date** : str, datetime.date or list, optional
+    > Calendar date (`YYYY-MM-DD`) to take the timetable from. If None, the busiest date of each feed is used. A list of the same length as `gtfs_paths` selects a separate date per feed, which is useful when feeds cover different validity periods.
+
+* **feed_ids** : list, optional
+    > Identifiers used to namespace stop, route and trip IDs of each feed so that feeds with overlapping ID spaces can be combined. Defaults to the file name of each feed when more than one feed is given, and to no namespacing at all for a single feed.
+
+* **max_headway** : int, optional
+    > Upper bound in seconds for the average headway of a stop. Stops served only once within the time window have an undefined headway; with `max_headway` set they are kept and assigned this value, otherwise they are dropped from the graph.
+
+* **max_speed_kmph** : int or dict, optional
+    > Trips faster than this between two consecutive stops (as the crow flies) are treated as corrupt and removed. Pass a dict keyed by `route_type` with an optional `'default'` entry to allow high speed rail its 300 km/h while still catching broken bus timetables.
+
+* **min_segment_travel_time** : int, optional
+    > Seconds to assign to segments whose timetable gives them no travel time at all. Without it, every trip containing such a segment is dropped, which is costly on feeds that round departures to whole minutes. Trips that genuinely contradict themselves (arrival before departure) are always dropped.
+
+* **max_speed_repair_factor** : float, optional
+    > How far above `max_speed_kmph` a segment may be before its whole trip is discarded instead of repaired.
+    >
+    > Feeds that round departures to whole minutes make short hops look impossibly fast, and losing the entire trip over one of them can take a whole rural bus line out of the graph. With a factor of 2, say, a segment up to twice the speed limit has its travel time stretched to what the limit allows, while anything beyond that is still corrupt enough to take its trip with it. The default of 1.0 repairs nothing and removes every trip with a segment over the limit.
+
+* **transfer_model** : {'headway', 'timetable'}, optional
+    > How long changing between two routes takes.
+    >
+    > `'headway'` charges half the headway of the route being boarded, which assumes the two timetables are unrelated. That holds for urban networks but not for regional and long distance services, where connections are deliberately scheduled: it makes an hourly train cost 30 minutes to board even when it was timed to meet the one just arrived.
+    >
+    > `'timetable'` instead reads the wait off the timetable. For every arrival of the first route it finds the next departure of the second that is reachable after the walk, and summarises those waits.
+
+* **max_transfer_wait** : int, optional
+    > Upper bound in seconds on the waiting part of a transfer, applied under either model. Acts as the safety net for pairs of routes that happen never to connect on the modelled day.
+
+* **transfer_wait_quantile** : float, optional
+    > Which of a connection's observed waits to charge, between 0 (the best connection of the day) and 1 (the worst); the mean is used when this is None. Only applies to `transfer_model='timetable'`.
+    >
+    > The mean answers "I turn up at a random time". A traveller going somewhere instead picks a departure whose connections line up, which a static graph cannot represent directly -- a low quantile approximates it. Around 0.2 reproduces published journey times best.
+
+* **min_transfer_time** : int, optional
+    > Seconds that must be left between arriving and departing for a connection to count, on top of the walk. Guards against modelling platform changes as instantaneous.
 
 
 #### Returns

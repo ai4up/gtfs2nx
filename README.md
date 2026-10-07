@@ -36,6 +36,31 @@ G = gx.transit_graph(
 )
 ```
 
+Combine several feeds and pick a specific day:
+```Python
+G = gx.transit_graph(
+    gtfs_paths=['switzerland.zip', 'germany.zip'],
+    feed_ids=['ch', 'de'],      # namespaces IDs so the feeds cannot collide
+    date='2026-07-04',          # or one date per feed, if their validity periods differ
+    max_headway=4 * 3600,       # keep stops served only once a day
+    max_speed_kmph={'default': 130, 2: 400},  # per route type, so high speed rail survives
+    min_segment_travel_time=30, # repair segments whose timetable rounds to zero
+    max_speed_repair_factor=2,  # slow over-fast segments down instead of dropping their trip
+)
+```
+
+Take transfer times from the timetable instead of assuming half a headway, which matters for
+regional and long-distance services whose connections are deliberately scheduled:
+```Python
+G = gx.transit_graph(
+    gtfs_paths='path/to/GTFS-feed.zip',
+    transfer_model='timetable',   # look up the next departure rather than guessing
+    transfer_wait_quantile=0.1,   # a traveller picks a departure whose connections line up
+    min_transfer_time=180,        # platform changes are not instantaneous
+    max_transfer_wait=3600,       # safety net for routes that never connect
+)
+```
+
 See the [API docs](./docs/api.md) for more details and the [getting-started notebook](./docs/getting_started.ipynb) for a small demo.
 
 

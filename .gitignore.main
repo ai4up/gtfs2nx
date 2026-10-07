@@ -9,3 +9,5 @@ slurm/
 __pycache__/
 *.pkl
 *.zip
+.env
+.venv/
